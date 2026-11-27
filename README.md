@@ -18,19 +18,28 @@ code and no database with the Platform or with the ESM application, and ran on t
 Workflow: `DRAFT → PENDING → APPROVED / REJECTED`. Roles: `requester`, `approver`, `auditor`. The approver can never be the
 request's creator (`notByCreator`); the justification is `sensitive` and appears as `[REDACTED]` in audit.
 
-**Documentation (Platform repository):** [product overview](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/README.md) · [Quick Start](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/QUICKSTART.md) ·
-[**Developer guide**](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/DEVELOPER-GUIDE.md) (this application is its worked example) · [API guide](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/API-GUIDE.md) ·
-[Validation summary](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/VALIDATION.md) · [M5 report](M5-REPORT.md) (Vietnamese).
+**Documentation (Platform repository):** [product overview](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/621c32999668203f40363009aabe83ec66287c37/docs/candidate/README.md) ·
+[**Developer guide**](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/621c32999668203f40363009aabe83ec66287c37/docs/candidate/DEVELOPER-GUIDE.md) (this application is its worked example) · [API guide](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/621c32999668203f40363009aabe83ec66287c37/docs/candidate/API-GUIDE.md) ·
+[Validation summary](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/621c32999668203f40363009aabe83ec66287c37/docs/candidate/VALIDATION.md) · [M5 report](M5-REPORT.md) (Vietnamese).
 
 ## Quick start (tested in M6.3)
 
-Requirements: Git, `tar`, Python 3.10+ (tested 3.14.2), Docker with Linux containers and Compose 2.24.4+ (tested Docker
-Engine 29.7.2, Compose 5.4.0), and a Git checkout of the Platform that contains commit
-`f401b6e79930a1386e71e92a91ae6a909cfa1e59`. Tested on Windows 11 with Git Bash; Linux and macOS are **not verified**. Keep
-at least 20 GB free on Docker's drive and stop if it falls below 10 GB. A cold (cache-less) build was not measured.
+Requirements: Git, `tar`, Python 3.10+, Docker with Linux containers and Compose 2.24.4+. M6.3
+used Windows 11, Git Bash, Python 3.14.2, Engine 29.7.2 and Compose 5.4.0. Linux and macOS
+remain unverified. Keep 20 GB free and stop below 10 GB.
+
+Procurement applies its own deployment overlay at the frozen Platform runtime `f401b6e79930a1386e71e92a91ae6a909cfa1e59`.
+The standalone example pins Procurement to the accepted M6.3 documentation commit `33a8bbf36f6f2daeb178ef405f8023561146c4d7`,
+which includes the M6.1-FIX implementation `f86777755fbcfde249881af0ee3064cca1de35a1`. For M6.4 use the exact candidate SHAs
+from the release manifest. Set `PROCUREMENT_GIT_SOURCE` to the Git checkout or bundle supplied by the owner.
 
 ```bash
-python deploy/stack.py up --platform /path/to/opentrix-v1-candidate    # pin, secrets, realm, Compose, CA export
+git clone --no-checkout https://github.com/lexuanbao258-collab/opentrix-v1-candidate.git opentrix-platform-runtime
+git -C opentrix-platform-runtime checkout --detach f401b6e79930a1386e71e92a91ae6a909cfa1e59
+git clone --no-local --no-checkout "$PROCUREMENT_GIT_SOURCE" opentrix-procurement-demo
+git -C opentrix-procurement-demo checkout --detach 33a8bbf36f6f2daeb178ef405f8023561146c4d7
+cd opentrix-procurement-demo
+python deploy/stack.py up --platform ../opentrix-platform-runtime
 python deploy/stack.py ps
 ```
 
@@ -38,7 +47,7 @@ python deploy/stack.py ps
 with the controlled `platform-migrate` step, waits for Keycloak to be healthy before starting the backend, starts Caddy
 HTTPS and exports its CA to `.local/<project>/caddy-root.crt`. Default project `opentrix-procurement-m5-verified`, HTTPS
 port `18444` on `127.0.0.1`; set `M5_PROJECT` (prefix `opentrix-procurement-`) and `M5_PORT` to run another stack beside it.
-If Docker answers `all predefined address pools have been fully subnetted`, free unused networks (see the Platform Quick Start).
+If Docker answers `all predefined address pools have been fully subnetted`, ask the operator to allocate an unused Docker subnet.
 
 ### Credentials
 
@@ -82,7 +91,7 @@ python deploy/stack.py restart && python -B -m tests.live verify-restart
 ```
 
 Executed in M6.3 on an isolated project (port 18463): unit 2 passed, live 12 passed, restart and persistence check
-passed. Details: [Validation summary](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/VALIDATION.md).
+passed. Details: [Validation summary](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/621c32999668203f40363009aabe83ec66287c37/docs/candidate/VALIDATION.md).
 
 ### Stop without deleting data
 
@@ -94,7 +103,7 @@ Re-creating the Keycloak container changes subjects, so ownership of older recor
 
 Prices are integers in minor currency units; the manifest has no currency, totals, limits or approval routing. Search
 covers the item name only. Keycloak runs in demo mode, no rate limiting, one organisation, no hosted CI (no remote). See
-the Platform [security and limitations](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/SECURITY-LIMITATIONS.md).
+the Platform [security and limitations](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/621c32999668203f40363009aabe83ec66287c37/docs/candidate/SECURITY-LIMITATIONS.md).
 
 ## License and attribution
 
@@ -122,8 +131,15 @@ Docker phải tải được base image và dùng được kho phụ thuộc Gra
 
 Từ repo này, chạy lệnh sau bằng PowerShell. Trên hệ điều hành khác, đổi đường dẫn Platform tương ứng.
 
+Chạy từ thư mục cha và đặt `$env:PROCUREMENT_GIT_SOURCE` thành đường dẫn repo Git hoặc bundle do chủ sở hữu cung cấp.
+
 ```powershell
-python deploy/stack.py up --platform D:\olp\opentrix-v1-candidate
+git clone --no-checkout https://github.com/lexuanbao258-collab/opentrix-v1-candidate.git opentrix-platform-runtime
+git -C opentrix-platform-runtime checkout --detach f401b6e79930a1386e71e92a91ae6a909cfa1e59
+git clone --no-local --no-checkout $env:PROCUREMENT_GIT_SOURCE opentrix-procurement-demo
+git -C opentrix-procurement-demo checkout --detach 33a8bbf36f6f2daeb178ef405f8023561146c4d7
+Set-Location opentrix-procurement-demo
+python deploy/stack.py up --platform ../opentrix-platform-runtime
 python deploy/stack.py ps
 ```
 
@@ -194,7 +210,7 @@ python deploy/stack.py restart
 python -B -m tests.live verify-restart
 ```
 
-Để kiểm tra từ clone mới trên cùng máy, clone repo bằng `git clone --no-local <đường-dẫn-repo-này> <thư-mục-mới>`.
+Để kiểm tra từ clone mới trên cùng máy, clone repo bằng `git clone --no-local --no-checkout $env:PROCUREMENT_GIT_SOURCE opentrix-procurement-fresh`, sau đó chạy `git -C opentrix-procurement-fresh checkout --detach 33a8bbf36f6f2daeb178ef405f8023561146c4d7`.
 Chọn `$env:M5_PROJECT = 'opentrix-procurement-m5-fresh'` và `$env:M5_PORT = '18445'` trong shell của clone.
 Lặp lại `up` và các lệnh kiểm thử ở trên. `python deploy/stack.py stop` dừng riêng stack đã chọn và giữ volume.
 
