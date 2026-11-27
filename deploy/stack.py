@@ -131,7 +131,7 @@ def main():
         compose("up", "-d", "--build", "backend", "ingress")
         export_ca()
     elif args.action == "restart":
-        compose("restart", "postgres", "keycloak", "backend", "ingress")
+        compose("restart", "--no-deps", "postgres", "keycloak", "backend", "ingress")
         export_ca()
     elif args.action == "stop":
         compose("stop", "backend", "ingress", "keycloak", "postgres")
