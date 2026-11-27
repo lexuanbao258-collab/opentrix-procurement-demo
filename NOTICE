@@ -1,0 +1,18 @@
+OpenTrix Procurement CLI
+Copyright 2026 OpenTrix Procurement contributors
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+deploy/Caddyfile adapts the Platform ingress from
+infra/demo/Caddyfile in lexuanbao258-collab/opentrix-v1-candidate
+at f401b6e79930a1386e71e92a91ae6a909cfa1e59 (Apache-2.0).
+The original copyright is 2026 TRICORE contributors. Procurement
+retains the API allowlist and adapts the config to a CLI-only ingress
+with a Keycloak token endpoint. See the Platform NOTICE for additional
+candidate and upstream attribution.
+
+Codex assisted with implementation, documentation and verification of
+the M5 experiment and the M6.1-FIX deployment hardening. The existing
+upstream attribution applies to the adapted material.
+
+See THIRD-PARTY-NOTICES.md for external prerequisites and images.

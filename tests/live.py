@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
+# SPDX-License-Identifier: Apache-2.0
 """Run acceptance checks against the isolated M5 Keycloak and Platform."""
 import base64
 import json

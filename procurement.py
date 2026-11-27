@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
+# SPDX-License-Identifier: Apache-2.0
 """Manage OpenTrix procurement requests using the Platform v1 HTTPS API."""
 import argparse
 import base64
@@ -108,7 +110,7 @@ class Client:
         except ApiError as error:
             if write_id is None or not (
                 error.code == "COMMIT_OUTCOME_UNKNOWN"
-                or (error.status >= 500 and error.code != "STORE_UNAVAILABLE")
+                or (error.status >= 500 and (error.status, error.code) != (503, "STORE_UNAVAILABLE"))
             ):
                 raise
         except TransportError:

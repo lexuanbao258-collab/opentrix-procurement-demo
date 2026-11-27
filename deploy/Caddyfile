@@ -1,4 +1,5 @@
-# Platform allowlist adapted from f401b6e:infra/demo/Caddyfile.
+# Platform allowlist adapted from f401b6e:infra/demo/Caddyfile (see NOTICE).
+# SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
 # SPDX-FileCopyrightText: 2026 TRICORE contributors
 # SPDX-License-Identifier: Apache-2.0
 {

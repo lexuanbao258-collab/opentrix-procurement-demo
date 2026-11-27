@@ -1,9 +1,31 @@
+# SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
+# SPDX-License-Identifier: Apache-2.0
 # Overlay for the frozen Platform demo Compose.
 services:
   postgres:
     ports: !override
       - "127.0.0.1:${M5_PORT:-18444}:8443"
   keycloak:
+    environment:
+      KC_HEALTH_ENABLED: "true"
+    healthcheck:
+      # Keycloak's image includes Bash but no HTTP client. Check readiness and realm import.
+      test:
+        - CMD
+        - bash
+        - -ec
+        - |
+          probe() {
+            printf 'GET %s HTTP/1.0\r\nHost: localhost\r\n\r\n' "$$2" >&3
+            read -r protocol status reason <&3
+            [[ "$$status" == 200 ]]
+          } 3<>"/dev/tcp/127.0.0.1/$$1"
+          probe 9001 /health/ready
+          probe "$${KC_HTTP_PORT}" /realms/tricore/.well-known/openid-configuration
+      interval: 3s
+      timeout: 3s
+      retries: 40
+      start_period: 30s
     volumes: !override
       - ${M5_LOCAL}/realm.json:/opt/keycloak/data/import/tricore-realm.json:ro
   platform-migrate:
@@ -14,7 +36,7 @@ services:
       platform-migrate:
         condition: service_completed_successfully
       keycloak:
-        condition: service_started
+        condition: service_healthy
     environment:
       DXOS_HELPDESK_ENABLED: "false"
   ingress:

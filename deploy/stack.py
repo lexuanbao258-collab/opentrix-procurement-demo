@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
+# SPDX-License-Identifier: Apache-2.0
 """Provision and operate only the isolated M5 Compose project."""
 import argparse
 import copy
@@ -131,7 +133,10 @@ def main():
         compose("up", "-d", "--build", "backend", "ingress")
         export_ca()
     elif args.action == "restart":
-        compose("restart", "--no-deps", "postgres", "keycloak", "backend", "ingress")
+        compose("stop", "backend")
+        compose("restart", "--no-deps", "postgres", "keycloak", "ingress")
+        compose("start", "--wait", "--wait-timeout", "180", "keycloak")
+        compose("restart", "--no-deps", "backend")
         export_ca()
     elif args.action == "stop":
         compose("stop", "backend", "ingress", "keycloak", "postgres")

@@ -1,3 +1,8 @@
+<!--
+SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
+SPDX-License-Identifier: Apache-2.0
+-->
+
 # OpenTrix Procurement CLI
 
 Ứng dụng thử nghiệm M5 cho yêu cầu mua sắm nội bộ. Manifest `opentrix-procurement@1.0.0` khai báo thực thể
@@ -18,7 +23,8 @@ python deploy/stack.py ps
 
 Lệnh `up` trích đúng commit vào thư mục dữ liệu của project, khởi động PostgreSQL, Keycloak, Platform và Caddy trong project
 `opentrix-procurement-m5-verified`. Compose `platform-migrate` chạy bằng tài khoản chủ schema và mount thư mục manifest chỉ đọc
-trước khi backend khởi động. Trong lần đăng ký đầu tiên, thư mục gồm manifest mới cùng hai manifest IT và HR nguyên bản
+trước khi backend khởi động. Backend chờ readiness và discovery của realm Keycloak. Trong lần đăng ký đầu tiên,
+thư mục gồm manifest mới cùng hai manifest IT và HR nguyên bản
 từ Platform để kiểm thử quyền liên ứng dụng. Stack chạy độc lập với repo ESM. Chọn project và cổng riêng bằng
 `M5_PROJECT` (tiền tố `opentrix-procurement-`) và `M5_PORT` (mặc định `18444`) khi cần một bản chạy song song.
 
@@ -76,6 +82,7 @@ nhưng không phải lúc nào cũng xác định dứt khoát thao tác nào đ
 ## Kiểm thử
 
 ```powershell
+python -B -m unittest tests.test_procurement -v
 python -B -m tests.live -v
 python deploy/stack.py restart
 python -B -m tests.live verify-restart
@@ -94,3 +101,8 @@ container. Nếu tạo lại container Keycloak, subject có thể thay đổi v
 Nếu cổng bị chiếm, chọn `M5_PORT` khác. Nếu TLS lỗi, kiểm tra đúng hostname và CA của project đang chạy.
 
 Xem kết quả, điểm vướng và đề xuất M6 trong [báo cáo M5](M5-REPORT.md).
+
+## Giấy phép
+
+Codex hỗ trợ triển khai, viết tài liệu và kiểm chứng M5 và M6.1-FIX. Xem [Apache-2.0](LICENSE), [NOTICE](NOTICE),
+[giấy phép phụ thuộc](THIRD-PARTY-NOTICES.md) và [Platform tại mốc runtime ghim](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/tree/f401b6e79930a1386e71e92a91ae6a909cfa1e59).

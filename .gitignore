@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
+# SPDX-License-Identifier: Apache-2.0
 .local/
 .env
 __pycache__/
