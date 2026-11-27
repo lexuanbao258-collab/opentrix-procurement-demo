@@ -3,7 +3,113 @@ SPDX-FileCopyrightText: 2026 OpenTrix Procurement contributors
 SPDX-License-Identifier: Apache-2.0
 -->
 
-# OpenTrix Procurement CLI
+# OpenTrix Procurement
+
+> **Language / Ngôn ngữ:** English (below) · [Tiếng Việt](#tiếng-việt-bản-gốc)
+
+An **independently implemented** application on the OpenTrix Platform public API: internal purchase requests with a
+manifest (`opentrix-procurement@1.0.0`), a Python standard-library CLI, its own deployment overlay and tests. It shares no
+code and no database with the Platform or with the ESM application, and ran on the frozen Platform runtime
+`f401b6e79930a1386e71e92a91ae6a909cfa1e59` with **0 changed Platform runtime files**.
+
+> **Status: a competition-ready, self-hosted demonstration candidate, not a production-certified system.** Synthetic data
+> only. This repository is a **local checkout; no public remote has been approved.**
+
+Workflow: `DRAFT → PENDING → APPROVED / REJECTED`. Roles: `requester`, `approver`, `auditor`. The approver can never be the
+request's creator (`notByCreator`); the justification is `sensitive` and appears as `[REDACTED]` in audit.
+
+**Documentation (Platform repository):** [product overview](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/README.md) · [Quick Start](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/QUICKSTART.md) ·
+[**Developer guide**](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/DEVELOPER-GUIDE.md) (this application is its worked example) · [API guide](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/API-GUIDE.md) ·
+[Validation summary](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/VALIDATION.md) · [M5 report](M5-REPORT.md) (Vietnamese).
+
+## Quick start (tested in M6.3)
+
+Requirements: Git, `tar`, Python 3.10+ (tested 3.14.2), Docker with Linux containers and Compose 2.24.4+ (tested Docker
+Engine 29.7.2, Compose 5.4.0), and a Git checkout of the Platform that contains commit
+`f401b6e79930a1386e71e92a91ae6a909cfa1e59`. Tested on Windows 11 with Git Bash; Linux and macOS are **not verified**. Keep
+at least 20 GB free on Docker's drive and stop if it falls below 10 GB. A cold (cache-less) build was not measured.
+
+```bash
+python deploy/stack.py up --platform /path/to/opentrix-v1-candidate    # pin, secrets, realm, Compose, CA export
+python deploy/stack.py ps
+```
+
+`up` extracts the pinned commit with `git archive`, generates every secret and the Keycloak realm, registers the manifests
+with the controlled `platform-migrate` step, waits for Keycloak to be healthy before starting the backend, starts Caddy
+HTTPS and exports its CA to `.local/<project>/caddy-root.crt`. Default project `opentrix-procurement-m5-verified`, HTTPS
+port `18444` on `127.0.0.1`; set `M5_PROJECT` (prefix `opentrix-procurement-`) and `M5_PORT` to run another stack beside it.
+If Docker answers `all predefined address pools have been fully subnetted`, free unused networks (see the Platform Quick Start).
+
+### Credentials
+
+`.local/<project>/accounts.json`, `compose.env` and `realm.json` hold randomly generated secrets, are mode 0600 and are
+ignored by Git. Never commit, paste or screenshot them. The CLI reads the client secret from the environment, never from
+arguments. The machine clients are `m5-requester`, `m5-approver`, `m5-auditor` (main) and `m5-dual`, `m5-hr`, `m5-it`
+(negative tests). They use OAuth2 `client_credentials`; the realm gives them the `service_account` scope so audit records
+`actorType: MACHINE`. Ownership belongs to the service account: everyone sharing a secret shares one identity.
+
+### Run the CLI (Git Bash)
+
+```bash
+P=opentrix-procurement-m5-verified; export PROCUREMENT_API_URL=https://localhost:18444
+export PROCUREMENT_CA_FILE="$PWD/.local/$P/caddy-root.crt"
+use() { export PROCUREMENT_CLIENT_ID="m5-$1"
+  PROCUREMENT_CLIENT_SECRET=$(python -I -c "import json,sys;print(json.load(open(sys.argv[1]))[sys.argv[2]])" ".local/$P/accounts.json" "$1")
+  export PROCUREMENT_CLIENT_SECRET; }
+use requester; python procurement.py apps && python procurement.py entity
+ID=$(python -c "import uuid;print(uuid.uuid4())")
+python procurement.py create --id "$ID" --item 'Synthetic keyboard' --quantity 2 --unit-price-minor 2500 --justification 'demo'
+python procurement.py search keyboard && python procurement.py submit "$ID" --version 0
+use approver; python procurement.py workflow "$ID" && python procurement.py approve "$ID" --version 1 && python procurement.py history "$ID"
+use auditor;  python procurement.py audit --id "$ID"
+```
+
+The PowerShell equivalent is in the Vietnamese section below. Use the hostname `localhost` (not an IP) and keep
+`PROCUREMENT_CA_FILE`: the CLI verifies the CA and hostname for both the API and the token endpoint.
+`list`, `search` and `audit` take `--limit` and `--offset`; `update ID --version N` needs all four fields; `delete` and
+`update` work only in `DRAFT`; `reject ID --version N` rejects a `PENDING` request. `python procurement.py COMMAND --help`.
+
+**Exit codes.** `3` = version conflict: re-read, decide again. `4` = write outcome unknown: run `reconcile ID` (reads
+the record and history with your current permissions). The CLI never replays a write by itself; to replay a create, reuse
+the same `--id` and the original data. The CLI prints the create UUID before sending.
+
+### Verify
+
+```bash
+python -B -m unittest tests.test_procurement -v     # 2 unit tests
+python -B -m tests.live -v                          # 12 live checks, about 5 to 6 minutes
+python deploy/stack.py restart && python -B -m tests.live verify-restart
+```
+
+Executed in M6.3 on an isolated project (port 18463): unit 2 passed, live 12 passed, restart and persistence check
+passed. Details: [Validation summary](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/VALIDATION.md).
+
+### Stop without deleting data
+
+`python deploy/stack.py stop` stops backend, ingress, Keycloak and PostgreSQL and keeps the volumes. `restart` waits for
+Keycloak before the backend. Do not run `docker compose down -v` or delete volumes unless you intend to lose the data.
+Re-creating the Keycloak container changes subjects, so ownership of older records must then be reviewed.
+
+## Limitations
+
+Prices are integers in minor currency units; the manifest has no currency, totals, limits or approval routing. Search
+covers the item name only. Keycloak runs in demo mode, no rate limiting, one organisation, no hosted CI (no remote). See
+the Platform [security and limitations](https://github.com/lexuanbao258-collab/opentrix-v1-candidate/blob/docs/m6.3-documentation/docs/candidate/SECURITY-LIMITATIONS.md).
+
+## License and attribution
+
+Apache-2.0: [LICENSE](LICENSE), [NOTICE](NOTICE) (Caddyfile adapted from the Platform ingress, Apache-2.0, TRICORE
+contributors), [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). AI-assisted development is disclosed in NOTICE (Codex for
+M5 and M6.1-FIX; Claude for the M6.3 documentation); the owner should confirm the complete tool list. Candidate work
+carries no upstream approval.
+
+---
+
+<a id="tiếng-việt-bản-gốc"></a>
+
+## Tiếng Việt (bản gốc)
+
+### OpenTrix Procurement CLI
 
 Ứng dụng thử nghiệm M5 cho yêu cầu mua sắm nội bộ. Manifest `opentrix-procurement@1.0.0` khai báo thực thể
 `purchaseRequest` và luồng `DRAFT → PENDING → APPROVED / REJECTED`. CLI dùng thư viện chuẩn Python và Platform API v1.
