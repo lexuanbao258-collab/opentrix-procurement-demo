@@ -1,0 +1,49 @@
+{
+  "id": "opentrix-procurement",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "name": { "en": "Procurement", "vi": "Mua sắm nội bộ" },
+  "roles": {
+    "requester": { "name": { "en": "Requester" } },
+    "approver": { "name": { "en": "Approver" } },
+    "auditor": { "name": { "en": "Auditor" } }
+  },
+  "entities": {
+    "purchaseRequest": {
+      "name": { "en": "Purchase request" },
+      "schema": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["itemName", "quantity", "estimatedUnitPriceMinor", "justification"],
+        "properties": {
+          "itemName": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "quantity": { "type": "integer", "minimum": 1, "maximum": 10000 },
+          "estimatedUnitPriceMinor": { "type": "integer", "title": "Estimated unit price (minor units)", "minimum": 0, "maximum": 1000000000 },
+          "justification": { "type": "string", "minLength": 1, "maxLength": 500, "sensitive": true }
+        }
+      },
+      "search": ["itemName"],
+      "permissions": {
+        "create": { "requester": "own" },
+        "read": { "requester": "own", "approver": "all", "auditor": "all" },
+        "update": { "requester": "own" },
+        "delete": { "requester": "own" },
+        "audit": { "auditor": "all" }
+      },
+      "workflow": {
+        "initialState": "DRAFT",
+        "states": {
+          "DRAFT": { "name": { "en": "Draft" } },
+          "PENDING": { "name": { "en": "Pending decision" }, "editable": false },
+          "APPROVED": { "name": { "en": "Approved" }, "editable": false },
+          "REJECTED": { "name": { "en": "Rejected" }, "editable": false }
+        },
+        "transitions": {
+          "submit": { "from": "DRAFT", "to": "PENDING", "roles": { "requester": "own" } },
+          "approve": { "from": "PENDING", "to": "APPROVED", "roles": { "approver": "all" }, "notByCreator": true },
+          "reject": { "from": "PENDING", "to": "REJECTED", "roles": { "approver": "all" }, "notByCreator": true }
+        }
+      }
+    }
+  }
+}

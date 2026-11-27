@@ -1,0 +1,25 @@
+# Overlay for the frozen Platform demo Compose.
+services:
+  postgres:
+    ports: !override
+      - "127.0.0.1:${M5_PORT:-18444}:8443"
+  keycloak:
+    volumes: !override
+      - ${M5_LOCAL}/realm.json:/opt/keycloak/data/import/tricore-realm.json:ro
+  platform-migrate:
+    volumes: !override
+      - ${M5_LOCAL}/apps:/apps:ro
+  backend:
+    depends_on: !override
+      platform-migrate:
+        condition: service_completed_successfully
+      keycloak:
+        condition: service_started
+    environment:
+      DXOS_HELPDESK_ENABLED: "false"
+  ingress:
+    image: caddy:2.10.2-alpine@sha256:4c6e91c6ed0e2fa03efd5b44747b625fec79bc9cd06ac5235a779726618e530d
+    build: !reset null
+    depends_on: !reset []
+    volumes:
+      - ${M5_ROOT}/deploy/Caddyfile:/etc/caddy/Caddyfile:ro

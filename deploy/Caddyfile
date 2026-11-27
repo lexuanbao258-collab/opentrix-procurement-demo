@@ -1,0 +1,40 @@
+# Platform allowlist adapted from f401b6e:infra/demo/Caddyfile.
+# SPDX-FileCopyrightText: 2026 TRICORE contributors
+# SPDX-License-Identifier: Apache-2.0
+{
+	auto_https disable_redirects
+	servers {
+		strict_sni_host on
+	}
+}
+
+https://localhost:8443 {
+	tls internal
+
+	@token {
+		method POST
+		path /realms/tricore/protocol/openid-connect/token
+	}
+	handle @token {
+		reverse_proxy 127.0.0.1:8180
+	}
+
+	@platform <<CEL
+		(method('GET') && path_regexp(r'^/api/v1/apps(?:/[a-z0-9-]+(?:/entities/[A-Za-z0-9_]+(?:/(?:audit|records(?:/[0-9A-Fa-f-]+(?:/(?:workflow|history))?)?))?)?)?$'))
+		|| (method('POST') && path_regexp(r'^/api/v1/apps/[a-z0-9-]+/entities/[A-Za-z0-9_]+/records(?:/[0-9A-Fa-f-]+/transitions/[A-Za-z0-9_]+)?$'))
+		|| (method('PUT', 'DELETE') && path_regexp(r'^/api/v1/apps/[a-z0-9-]+/entities/[A-Za-z0-9_]+/records/[0-9A-Fa-f-]+$'))
+		CEL
+	handle @platform {
+		request_body {
+			max_size 128KiB
+		}
+		reverse_proxy 127.0.0.1:8080 {
+			header_up -Cookie
+			header_up -X-Forwarded-For
+			header_up -Forwarded
+		}
+	}
+	handle {
+		respond 404
+	}
+}
